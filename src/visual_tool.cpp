@@ -73,7 +73,7 @@ ASS_Metrics* VisualToolBase::GetSubtitleMetrics(double time) {
         return nullptr;
     }
     
-    provider->LoadSubtitles(c->ass.get(), -1);
+     provider->LoadSubtitles(c->ass.get(), time);
     
     VideoFrame frame;
 
@@ -515,7 +515,9 @@ void VisualToolBase::GetLineClip(AssDialogue *diag, Vector2D &p1, Vector2D &p2, 
 	if (tag && tag->size() == 4) {
 		// p1 = vec_or_bad(tag, 0, 1);
 		// p2 = vec_or_bad(tag, 2, 3);
-		ASS_Metrics* m = GetSubtitleMetrics(diag->Start);
+		double now = c->videoController->TimeAtFrame(frame_number);
+		LOG_I("frame_number/now") << now;
+		ASS_Metrics* m = GetSubtitleMetrics(now/1000);
 		if (m) {
 			p1 = Vector2D(m->clips->x0 / parent->GetZoom(), m->clips->y0 / parent->GetZoom());
 			p2 = Vector2D(m->clips->x1 / parent->GetZoom(), m->clips->y1 / parent->GetZoom());

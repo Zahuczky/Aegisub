@@ -66,6 +66,15 @@ VisualToolClip::VisualToolClip(VideoDisplay *parent, agi::Context *context)
 void VisualToolClip::Draw() {
 	if (!active_line) return;
 
+    Vector2D p1_script, p2_script;
+    bool inv;
+    GetLineClip(active_line, p1_script, p2_script, inv);
+    cur_1    = FromScriptCoords(p1_script);
+    cur_2    = FromScriptCoords(p2_script);
+    inverse  = inv;
+
+	SetFeaturePositions();
+
 	DrawAllFeatures();
 
 	// Load colors from options
