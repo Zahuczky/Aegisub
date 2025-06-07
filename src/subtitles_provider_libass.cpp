@@ -48,6 +48,7 @@
 #include <boost/gil.hpp>
 #include <memory>
 #include <mutex>
+#include <condition_variable>
 
 #include <wx/intl.h>
 #include <wx/thread.h>
@@ -81,6 +82,8 @@ void msg_callback(int level, const char *fmt, va_list args, void *) {
 struct cache_thread_shared {
 	ASS_Renderer *renderer = nullptr;
 	std::atomic<bool> ready{false};
+	std::mutex mutex;
+ 	std::condition_variable cond;
 	~cache_thread_shared() { if (renderer) ass_renderer_done(renderer); }
 };
 
@@ -94,9 +97,10 @@ class LibassSubtitlesProvider final : public SubtitlesProvider {
 			return shared->renderer;
 
 		auto block = [&] {
+			std::unique_lock<std::mutex> lk(shared->mutex);
 			if (shared->ready)
 				return;
-			agi::util::sleep_for(250);
+			shared->cond.wait_for(lk, std::chrono::milliseconds(50));
 			if (shared->ready)
 				return;
 			br->Run([this](agi::ProgressSink *ps) {
@@ -153,7 +157,9 @@ LibassSubtitlesProvider::LibassSubtitlesProvider(agi::BackgroundRunner *br)
 			ass_set_fonts(ass_renderer, nullptr, "Sans", 1, nullptr, true);
 		}
 		state->renderer = ass_renderer;
+		std::unique_lock<std::mutex> lk(state->mutex);
 		state->ready = true;
+		state->cond.notify_all();
 	});
 }
 
