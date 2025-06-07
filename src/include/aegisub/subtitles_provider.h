@@ -38,6 +38,11 @@
 #include <string>
 #include <vector>
 
+extern "C" {
+#include <ass/ass.h>
+#include <ass/ass_metrics.h>
+}
+
 class AssFile;
 struct VideoFrame;
 
@@ -49,6 +54,8 @@ public:
 	virtual ~SubtitlesProvider() = default;
 	void LoadSubtitles(AssFile *subs, int time = -1);
 	virtual void DrawSubtitles(VideoFrame &dst, double time)=0;
+    virtual ASS_Metrics *GetMetrics(VideoFrame &dst, double time)
+    { return nullptr; }
 	virtual void Reinitialize() { }
 };
 

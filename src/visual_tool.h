@@ -25,6 +25,10 @@
 
 #include <set>
 
+extern "C" {
+#include <ass/ass_metrics.h>
+}
+
 class AssDialogue;
 class VideoDisplay;
 class wxMouseCaptureLostEvent;
@@ -123,6 +127,9 @@ protected:
 	void GetLineRotation(AssDialogue *diag, float &rx, float &ry, float &rz);
 	void GetLineShear(AssDialogue *diag, float& fax, float& fay);
 	void GetLineScale(AssDialogue *diag, Vector2D &scale);
+
+	ASS_Metrics* GetSubtitleMetrics(double time);
+
 	void GetLineClip(AssDialogue *diag, Vector2D &p1, Vector2D &p2, bool &inverse);
 	std::string GetLineVectorClip(AssDialogue *diag, int &scale, bool &inverse);
 

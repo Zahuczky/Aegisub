@@ -33,8 +33,17 @@
 #include <libaegisub/format.h>
 #include <libaegisub/of_type_adaptor.h>
 #include <libaegisub/string.h>
+#include <libaegisub/log.h>
 
 #include <algorithm>
+
+
+#include "include/aegisub/subtitles_provider.h"
+#include "video_frame.h"
+
+extern "C" {
+#include <ass/ass_metrics.h>
+}
 
 VisualToolBase::VisualToolBase(VideoDisplay *parent, agi::Context *context)
 : c(context)
@@ -54,6 +63,31 @@ VisualToolBase::VisualToolBase(VideoDisplay *parent, agi::Context *context)
 	connections.push_back(c->selectionController->AddActiveLineListener(&VisualToolBase::OnActiveLineChanged, this));
 	connections.push_back(c->videoController->AddSeekListener(&VisualToolBase::OnSeek, this));
 	parent->Bind(wxEVT_MOUSE_CAPTURE_LOST, &VisualToolBase::OnMouseCaptureLost, this);
+}
+
+
+ASS_Metrics* VisualToolBase::GetSubtitleMetrics(double time) {
+    auto provider = SubtitlesProviderFactory::GetProvider(nullptr);
+    
+    if (!provider) {
+        return nullptr;
+    }
+    
+    provider->LoadSubtitles(c->ass.get(), -1);
+    
+    VideoFrame frame;
+
+    if (video_res.X() > 0 && video_res.Y() > 0) {
+        frame.width = video_res.X();
+        frame.height = video_res.Y();
+    } else {
+        frame.width = script_res.X();
+        frame.height = script_res.Y();
+    }
+    frame.data.resize(frame.width * frame.height * 4);
+    frame.flipped = false;
+    
+    return provider->GetMetrics(frame, time);
 }
 
 void VisualToolBase::OnCommit(int type) {
@@ -479,13 +513,20 @@ void VisualToolBase::GetLineClip(AssDialogue *diag, Vector2D &p1, Vector2D &p2, 
 		tag = find_tag(blocks, "\\clip");
 
 	if (tag && tag->size() == 4) {
-		p1 = vec_or_bad(tag, 0, 1);
-		p2 = vec_or_bad(tag, 2, 3);
+		// p1 = vec_or_bad(tag, 0, 1);
+		// p2 = vec_or_bad(tag, 2, 3);
+		ASS_Metrics* m = GetSubtitleMetrics(diag->Start);
+		if (m) {
+			p1 = Vector2D(m->clips->x0 / parent->GetZoom(), m->clips->y0 / parent->GetZoom());
+			p2 = Vector2D(m->clips->x1 / parent->GetZoom(), m->clips->y1 / parent->GetZoom());
+		}
+
 	}
 	else {
 		p1 = Vector2D(0, 0);
 		p2 = script_res - 1;
 	}
+
 }
 
 std::string VisualToolBase::GetLineVectorClip(AssDialogue *diag, int &scale, bool &inverse) {

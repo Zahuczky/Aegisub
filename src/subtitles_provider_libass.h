@@ -17,6 +17,11 @@
 #include <memory>
 #include <string>
 
+extern "C" {
+#include <ass/ass.h>
+#include <ass/ass_metrics.h>
+}
+
 class SubtitlesProvider;
 namespace agi { class BackgroundRunner; }
 

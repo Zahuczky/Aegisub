@@ -54,6 +54,7 @@
 
 extern "C" {
 #include <ass/ass.h>
+#include <ass/ass_metrics.h>
 }
 
 namespace {
@@ -125,6 +126,8 @@ public:
 	}
 
 	void DrawSubtitles(VideoFrame &dst, double time) override;
+	ASS_Metrics* GetMetrics(VideoFrame &dst, double time) override;
+	
 
 	void Reinitialize() override {
 		// No need to reinit if we're not even done with the initial init
@@ -162,6 +165,25 @@ LibassSubtitlesProvider::~LibassSubtitlesProvider() {
 #define _g(c) (((c)>>16)&0xFF)
 #define _b(c) (((c)>>8)&0xFF)
 #define _a(c) ((c)&0xFF)
+
+ASS_Metrics* LibassSubtitlesProvider::GetMetrics(VideoFrame &frame, double time) {
+    ass_set_frame_size(renderer(), frame.width, frame.height);
+    ass_set_storage_size(renderer(), frame.width, frame.height);
+
+	// I think using the same renderer fucks with the output bitmaps of DrawSubtitles
+    ASS_Renderer* metrR = ass_renderer_init(library);
+    ass_set_font_scale(metrR, 1.0);
+    ass_set_fonts(metrR, nullptr, "Sans", 1, nullptr, true);
+    ass_set_frame_size(metrR, frame.width, frame.height);
+    ass_set_storage_size(metrR, frame.width, frame.height);
+
+    ASS_Metrics* metr = ass_get_metrics(metrR, ass_track, int(time * 1000));
+    LOG_I("metrics/test") << "Metrics retrieved successfully.";
+
+    ass_renderer_done(metrR);
+    
+    return metr;
+}
 
 void LibassSubtitlesProvider::DrawSubtitles(VideoFrame &frame,double time) {
 	ass_set_frame_size(renderer(), frame.width, frame.height);
