@@ -167,20 +167,19 @@ LibassSubtitlesProvider::~LibassSubtitlesProvider() {
 #define _a(c) ((c)&0xFF)
 
 ASS_Metrics* LibassSubtitlesProvider::GetMetrics(VideoFrame &frame, double time) {
-    ass_set_frame_size(renderer(), frame.width, frame.height);
+    ass_set_frame_size(renderer(), frame.width, frame.height); // <- the first call to renderer() takes around 260ms (wherever that first call is in this function)
     ass_set_storage_size(renderer(), frame.width, frame.height);
 
-	// I think using the same renderer fucks with the output bitmaps of DrawSubtitles
-    ASS_Renderer* metrR = ass_renderer_init(library);
-    ass_set_font_scale(metrR, 1.0);
-    ass_set_fonts(metrR, nullptr, "Sans", 1, nullptr, true);
-    ass_set_frame_size(metrR, frame.width, frame.height);
-    ass_set_storage_size(metrR, frame.width, frame.height);
+	// // I think using the same renderer fucks with the output bitmaps of DrawSubtitles
+    // ASS_Renderer* metrR = ass_renderer_init(library);
+    // ass_set_font_scale(metrR, 1.0);
+    // ass_set_fonts(metrR, nullptr, "Sans", 1, nullptr, true);
+    // ass_set_frame_size(metrR, frame.width, frame.height);
+    // ass_set_storage_size(metrR, frame.width, frame.height);
 
-    ASS_Metrics* metr = ass_get_metrics(metrR, ass_track, int(time * 1000));
-    LOG_I("metrics/test") << "Metrics retrieved successfully.";
+    ASS_Metrics* metr = ass_get_metrics(renderer(), ass_track, int(time * 1000));
 
-    ass_renderer_done(metrR);
+    // ass_renderer_done(metrR);
     
     return metr;
 }
